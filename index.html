@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora de Impressão | Leonaldo Santos</title>
+  <meta name="description" content="Calcule o valor de uma impressão a partir da largura, altura e valor do metro quadrado do material." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: hsl(232 30% 7%);
+      --surface: hsl(232 28% 12% / 0.72);
+      --surface-2: hsl(232 26% 16% / 0.9);
+      --border: hsl(232 25% 26% / 0.6);
+      --text: hsl(230 30% 96%);
+      --muted: hsl(230 15% 68%);
+      --accent: hsl(262 90% 68%);
+      --accent-2: hsl(190 95% 55%);
+      --ok: hsl(152 70% 52%);
+      --error: hsl(350 90% 66%);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      font-family: "Outfit", system-ui, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      display: grid;
+      place-items: center;
+      padding: 32px 16px;
+      overflow-x: hidden;
+    }
+
+    /* Fundo animado */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(90px);
+      opacity: 0.45;
+      z-index: -1;
+      animation: float 18s ease-in-out infinite alternate;
+    }
+    .blob.b1 { width: 420px; height: 420px; background: var(--accent); top: -120px; left: -100px; }
+    .blob.b2 { width: 380px; height: 380px; background: var(--accent-2); bottom: -140px; right: -80px; animation-delay: -6s; }
+    .blob.b3 { width: 260px; height: 260px; background: hsl(320 85% 60%); top: 45%; left: 55%; opacity: 0.25; animation-delay: -12s; }
+    @keyframes float {
+      to { transform: translate(60px, 40px) scale(1.12); }
+    }
+
+    main {
+      width: 100%;
+      max-width: 560px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 36px 32px 32px;
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      box-shadow: 0 30px 80px -20px hsl(240 60% 3% / 0.8), inset 0 1px 0 hsl(0 0% 100% / 0.06);
+      animation: rise 0.6s cubic-bezier(.2,.8,.2,1);
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(24px) scale(0.98); }
+    }
+
+    header { margin-bottom: 28px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+    .badge::before {
+      content: "";
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 0 12px var(--accent);
+    }
+    h1 {
+      font-size: clamp(1.7rem, 5vw, 2.2rem);
+      font-weight: 700;
+      line-height: 1.15;
+      background: linear-gradient(120deg, #fff 20%, var(--accent-2) 60%, var(--accent));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    header p { color: var(--muted); margin-top: 8px; font-weight: 300; }
+
+    form { display: grid; gap: 18px; }
+    .row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: start; }
+    .times {
+      align-self: center;
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: 1.3rem;
+    }
+
+    .field { display: grid; gap: 6px; }
+    label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--muted);
+    }
+    .control {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    input, select {
+      width: 100%;
+      font: inherit;
+      font-size: 1.05rem;
+      color: var(--text);
+      background: var(--surface-2);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 13px 14px;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s, transform .15s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    select {
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%23aab' stroke-width='2'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      padding-right: 40px;
+    }
+    select option { background: hsl(232 28% 14%); }
+    input:hover, select:hover { border-color: hsl(232 25% 38%); }
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px hsl(262 90% 68% / 0.18);
+    }
+    .control .suffix, .control .prefix {
+      position: absolute;
+      color: var(--muted);
+      font-size: 0.9rem;
+      pointer-events: none;
+    }
+    .control .suffix { right: 14px; }
+    .control .prefix { left: 14px; }
+    .control.has-suffix input { padding-right: 44px; }
+    .control.has-prefix input { padding-left: 42px; }
+
+    .field.invalid input { border-color: var(--error); box-shadow: 0 0 0 4px hsl(350 90% 66% / 0.14); animation: shake .3s; }
+    .field.valid input { border-color: hsl(152 70% 52% / 0.55); }
+    @keyframes shake {
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+    .error {
+      min-height: 1.1em;
+      font-size: 0.78rem;
+      color: var(--error);
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: opacity .2s, transform .2s;
+    }
+    .field.invalid .error { opacity: 1; transform: none; }
+    .hint { font-size: 0.75rem; color: var(--muted); opacity: 0.75; }
+
+    .material-row { display: grid; grid-template-columns: 1.3fr 1fr; gap: 12px; }
+    .qty-row { display: grid; grid-template-columns: 1fr; }
+
+    /* Resultado */
+    .result {
+      margin-top: 8px;
+      padding: 24px;
+      border-radius: var(--radius);
+      background:
+        linear-gradient(var(--surface-2), var(--surface-2)) padding-box,
+        linear-gradient(135deg, var(--accent), var(--accent-2)) border-box;
+      border: 1.5px solid transparent;
+      text-align: center;
+      transition: opacity .3s;
+    }
+    .result.empty { opacity: 0.55; }
+    .result-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+    }
+    .total {
+      font-size: clamp(2.2rem, 9vw, 3rem);
+      font-weight: 700;
+      margin: 6px 0 12px;
+      background: linear-gradient(120deg, #fff, var(--accent-2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      font-variant-numeric: tabular-nums;
+    }
+    .total.pop { animation: pop .35s ease; }
+    @keyframes pop {
+      40% { transform: scale(1.06); }
+    }
+    .memo {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.7;
+      font-variant-numeric: tabular-nums;
+    }
+    .memo strong { color: var(--text); font-weight: 500; }
+
+    .actions { display: flex; justify-content: flex-end; }
+    button {
+      font: inherit;
+      font-size: 0.9rem;
+      color: var(--muted);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: color .2s, border-color .2s, background .2s;
+    }
+    button:hover { color: var(--text); border-color: var(--accent); background: hsl(262 90% 68% / 0.08); }
+
+    footer { margin-top: 22px; text-align: center; font-size: 0.75rem; color: var(--muted); opacity: 0.6; }
+
+    @media (max-width: 480px) {
+      main { padding: 28px 20px 24px; }
+      .material-row { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+
+  <main>
+    <header>
+      <span class="badge">Leonaldo Santos</span>
+      <h1>Calculadora de Impressão</h1>
+      <p>Área da impressão (m²) × valor do m² do material</p>
+    </header>
+
+    <form id="calc-form" novalidate autocomplete="off">
+      <!-- P1 x P2: medidas -->
+      <div class="row">
+        <div class="field" data-field="largura">
+          <label for="largura">Largura</label>
+          <div class="control has-suffix">
+            <input id="largura" name="largura" type="text" inputmode="decimal" placeholder="30" aria-describedby="largura-erro" />
+            <span class="suffix">cm</span>
+          </div>
+          <span class="error" id="largura-erro" role="alert"></span>
+        </div>
+
+        <span class="times" aria-hidden="true">×</span>
+
+        <div class="field" data-field="altura">
+          <label for="altura">Altura</label>
+          <div class="control has-suffix">
+            <input id="altura" name="altura" type="text" inputmode="decimal" placeholder="40" aria-describedby="altura-erro" />
+            <span class="suffix">cm</span>
+          </div>
+          <span class="error" id="altura-erro" role="alert"></span>
+        </div>
+      </div>
+
+      <!-- P3: material e valor do m² -->
+      <div class="material-row">
+        <div class="field">
+          <label for="material">Material</label>
+          <select id="material" name="material"></select>
+          <span class="hint">Preenche o valor do m² automaticamente</span>
+        </div>
+
+        <div class="field" data-field="preco">
+          <label for="preco">Valor do m²</label>
+          <div class="control has-prefix">
+            <span class="prefix">R$</span>
+            <input id="preco" name="preco" type="text" inputmode="decimal" placeholder="313,20" aria-describedby="preco-erro" />
+          </div>
+          <span class="error" id="preco-erro" role="alert"></span>
+        </div>
+      </div>
+
+      <!-- Quantidade (opcional) -->
+      <div class="qty-row">
+        <div class="field" data-field="quantidade">
+          <label for="quantidade">Quantidade de cópias <span class="hint">(opcional)</span></label>
+          <input id="quantidade" name="quantidade" type="text" inputmode="numeric" placeholder="1" aria-describedby="quantidade-erro" />
+          <span class="error" id="quantidade-erro" role="alert"></span>
+        </div>
+      </div>
+
+      <section class="result empty" id="result" aria-live="polite">
+        <div class="result-label">Valor da impressão</div>
+        <div class="total" id="total">R$ 0,00</div>
+        <div class="memo" id="memo">Preencha as medidas e o valor do m² para calcular.</div>
+      </section>
+
+      <div class="actions">
+        <button type="reset" id="btn-limpar">Limpar</button>
+      </div>
+    </form>
+
+    <footer>Valores calculados sem arredondar a área; total arredondado em 2 casas.</footer>
+  </main>
+
+  <script>
+    /* =========================================================
+       MATERIAIS — para adicionar um novo, inclua uma linha aqui:
+       { nome: "Nome do material", precoM2: 123.45 },
+       ========================================================= */
+    const MATERIAIS = [
+      { nome: "Papel Adesivo", precoM2: 313.20 },
+      { nome: "Papel Matte Fibre", precoM2: 486.00 },
+    ];
+
+    const LIMITES = {
+      medida: { min: 1, max: 500 },          // cm
+      preco: { min: 0.01, max: 99999.99 },   // R$
+      quantidade: { min: 1, max: 9999 },
+    };
+
+    const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+    const num = (v, min = 2, max = 2) =>
+      v.toLocaleString("pt-BR", { minimumFractionDigits: min, maximumFractionDigits: max });
+
+    const $ = (id) => document.getElementById(id);
+    const form = $("calc-form");
+    const inputs = {
+      largura: $("largura"),
+      altura: $("altura"),
+      preco: $("preco"),
+      quantidade: $("quantidade"),
+    };
+    const selectMaterial = $("material");
+    const touched = new Set();
+
+    /* ---------- Popular select ---------- */
+    MATERIAIS.forEach((m, i) => {
+      const opt = new Option(`${m.nome} — ${brl.format(m.precoM2)}/m²`, String(i));
+      selectMaterial.add(opt);
+    });
+    selectMaterial.add(new Option("Outro (valor personalizado)", "custom"));
+
+    /* ---------- Parsing ---------- */
+    // Aceita "30", "30,5", "30.55" — vírgula ou ponto como decimal, até 2 casas.
+    const DECIMAL_RE = /^\d+([.,]\d{1,2})?$/;
+    const INTEIRO_RE = /^\d+$/;
+
+    function parseDecimal(raw) {
+      return Number(raw.replace(",", "."));
+    }
+
+    /* ---------- Validação ---------- */
+    function validarDecimal(raw, { min, max }, unidade) {
+      const v = raw.trim();
+      if (v === "") return { erro: "Campo obrigatório." };
+      if (/[.,]\d{3,}$/.test(v) && /^\d+[.,]\d+$/.test(v)) return { erro: "Use no máximo 2 casas decimais." };
+      if (!DECIMAL_RE.test(v)) return { erro: "Digite apenas números (ex.: 30 ou 30,5)." };
+      const n = parseDecimal(v);
+      if (n <= 0) return { erro: "O valor deve ser maior que zero." };
+      if (n < min) return { erro: `Mínimo: ${unidade(min)}.` };
+      if (n > max) return { erro: `Máximo: ${unidade(max)}.` };
+      return { valor: n };
+    }
+
+    const validadores = {
+      largura: (raw) => validarDecimal(raw, LIMITES.medida, (n) => `${num(n, 0)} cm`),
+      altura: (raw) => validarDecimal(raw, LIMITES.medida, (n) => `${num(n, 0)} cm`),
+      preco: (raw) => validarDecimal(raw, LIMITES.preco, (n) => brl.format(n)),
+      quantidade: (raw) => {
+        const v = raw.trim();
+        if (v === "") return { valor: 1 }; // opcional, padrão 1
+        if (!INTEIRO_RE.test(v)) return { erro: "Use um número inteiro (ex.: 1, 2, 10)." };
+        const n = Number(v);
+        if (n < LIMITES.quantidade.min) return { erro: "Mínimo: 1 cópia." };
+        if (n > LIMITES.quantidade.max) return { erro: `Máximo: ${num(LIMITES.quantidade.max, 0)} cópias.` };
+        return { valor: n };
+      },
+    };
+
+    function aplicarEstado(nome, resultado) {
+      const field = form.querySelector(`[data-field="${nome}"]`);
+      const input = inputs[nome];
+      const erroEl = $(`${nome}-erro`);
+      const mostrar = touched.has(nome);
+
+      field.classList.toggle("invalid", mostrar && !!resultado.erro);
+      field.classList.toggle("valid", mostrar && !resultado.erro && input.value.trim() !== "");
+      input.setAttribute("aria-invalid", mostrar && resultado.erro ? "true" : "false");
+      erroEl.textContent = mostrar && resultado.erro ? resultado.erro : "";
+    }
+
+    /* ---------- Cálculo ---------- */
+    const arred2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+
+    let ultimoTotal = null;
+
+    function calcular() {
+      const r = {};
+      let valido = true;
+      for (const nome of Object.keys(inputs)) {
+        r[nome] = validadores[nome](inputs[nome].value);
+        aplicarEstado(nome, r[nome]);
+        if (r[nome].erro) valido = false;
+      }
+
+      const resultEl = $("result");
+      const totalEl = $("total");
+      const memoEl = $("memo");
+
+      if (!valido) {
+        resultEl.classList.add("empty");
+        totalEl.textContent = "R$ 0,00";
+        memoEl.textContent = "Preencha as medidas e o valor do m² para calcular.";
+        ultimoTotal = null;
+        return;
+      }
+
+      const lm = r.largura.valor / 100;
+      const am = r.altura.valor / 100;
+      const area = lm * am;                       // sem arredondar
+      const unitario = arred2(area * r.preco.valor);
+      const qtd = r.quantidade.valor;
+      const total = arred2(unitario * qtd);
+
+      resultEl.classList.remove("empty");
+      totalEl.textContent = brl.format(total);
+      if (ultimoTotal !== total) {
+        totalEl.classList.remove("pop");
+        void totalEl.offsetWidth; // reinicia animação
+        totalEl.classList.add("pop");
+      }
+      ultimoTotal = total;
+
+      const areaTxt = num(area, 2, 4);
+      let memo =
+        `<strong>${num(lm, 2, 4)} m</strong> × <strong>${num(am, 2, 4)} m</strong> = ` +
+        `<strong>${areaTxt} m²</strong><br>` +
+        `${areaTxt} m² × ${brl.format(r.preco.valor)} = <strong>${brl.format(unitario)}</strong>`;
+      if (qtd > 1) {
+        memo += `<br>${brl.format(unitario)} × ${qtd} cópias = <strong>${brl.format(total)}</strong>`;
+      }
+      memoEl.innerHTML = memo;
+    }
+
+    /* ---------- Eventos ---------- */
+    function sincronizarPreco() {
+      const v = selectMaterial.value;
+      if (v === "custom") {
+        inputs.preco.focus();
+        return;
+      }
+      inputs.preco.value = num(MATERIAIS[Number(v)].precoM2);
+      touched.add("preco");
+      calcular();
+    }
+
+    selectMaterial.addEventListener("change", sincronizarPreco);
+
+    Object.entries(inputs).forEach(([nome, input]) => {
+      input.addEventListener("input", () => {
+        if (input.value.trim() !== "") touched.add(nome);
+        if (nome === "preco") {
+          // Se o valor digitado não bate com nenhum material, marca como personalizado
+          const r = validadores.preco(input.value);
+          const idx = r.erro ? -1 : MATERIAIS.findIndex((m) => m.precoM2 === r.valor);
+          selectMaterial.value = idx >= 0 ? String(idx) : "custom";
+        }
+        calcular();
+      });
+      input.addEventListener("blur", () => {
+        touched.add(nome);
+        calcular();
+      });
+    });
+
+    form.addEventListener("submit", (e) => e.preventDefault());
+    form.addEventListener("reset", () => {
+      setTimeout(() => {
+        touched.clear();
+        selectMaterial.value = "0";
+        sincronizarPreco();
+        touched.delete("preco");
+        calcular();
+        inputs.largura.focus();
+      });
+    });
+
+    // Estado inicial
+    selectMaterial.value = "0";
+    sincronizarPreco();
+    touched.delete("preco");
+    calcular();
+  </script>
+</body>
+</html>
